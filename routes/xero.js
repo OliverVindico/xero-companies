@@ -45,17 +45,23 @@ async function checkAuth(req, res, next) {
     const dt = moment().unix()
 
     if (lastTokenUpdate) console.log('Time since Last Token Update (seconds)', dt - lastTokenUpdate)
-    if (dt - lastTokenUpdate > 1500 || lastTokenUpdate == null) {
+
+    if (lastTokenUpdate == null) {
         lastTokenUpdate = dt
 
         console.log("Creating New Access Token...")
         tokenSet = await xero.getClientCredentialsToken();
-        xero.setTokenSet(tokenSet)
-
+        
         const tenants = await xero.updateTenants(false)
         tenantId = tenants[0].tenantId
         console.log("Access Token Created")
     }
+
+    else if (dt - lastTokenUpdate > 1500){
+        const validTokenSet = await xero.refreshToken();
+        xero.setTokenSet(validTokenSet)
+        lastTokenUpdate = dt
+    } 
 
     next()
 }
